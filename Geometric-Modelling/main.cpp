@@ -80,13 +80,13 @@ bool trueProj(vec2 o, vec2 x, vec2 y, vec2 z, vec2 uX, vec2 uY, vec2 uZ, double 
 	double h = length(points[2] - points[5]);
 	double j = length(points[3] - points[6]);
 
-	if (pow(e / f, 2) / pow(g / h, 2) - tan(alpha) / tan(beta) > sen)
+	if (std::abs(pow(e / f, 2) / pow(g / h, 2) - tan(alpha) / tan(beta)) > sen)
 		return false;
 
-	if (pow(g / h, 2) / pow(i / j, 2) - tan(beta) / tan(gamma) > sen)
+	if (std::abs(pow(g / h, 2) / pow(i / j, 2) - tan(beta) / tan(gamma)) > sen)
 		return false;
 
-	if (pow(e / f, 2) / pow(i / j, 2) - tan(alpha) / tan(gamma) > sen)
+	if (std::abs(pow(e / f, 2) / pow(i / j, 2) - tan(alpha) / tan(gamma)) > sen)
 		return false;
 
 

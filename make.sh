@@ -1,0 +1,1 @@
+g++ Geometric-Modelling/main.cpp -Wall -std=c++11 -O3 -march=native -ffp-contract=fast -I/usr/include/armadillo_bits -I/usr/local/include/optim -I"Geometric-Modelling/" -lblas -llapack -loptim -lGL -lglut -lGLU -o ./main.out

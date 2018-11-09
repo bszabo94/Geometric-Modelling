@@ -1,9 +1,13 @@
 #include <GL/glut.h>
 #include <bevgrafmath2017.h>
-#include <math.h>
+#include <cmath>
 #include <vector>
 #include <iostream>
 #include <string>
+
+#include "IL/il.h"
+#include <IL/ilu.h>
+#include "LTexture.h"
 
 const int winWidth = 800, winHeight = 600;
 std::vector<vec2> points;
@@ -12,14 +16,20 @@ int dragged = -1;
 int pointRadius = 4;
 int uDist = winWidth/4.0;
 
+//File loaded texture
+LTexture gLoadedTexture;
 
 void init() {
-
 	glClearColor(1.0, 1.0, 1.0, 0.0);
 	glMatrixMode(GL_PROJECTION);
 	gluOrtho2D(0.0, winWidth, 0.0, winHeight);
+
 	glEnable(GL_POINT_SMOOTH);
 	glEnable(GL_LINE_SMOOTH);
+	glEnable( GL_TEXTURE_2D );
+
+	ilInit();
+    ilClearColour( 255, 255, 255, 000 );
 }
 
 
@@ -168,10 +178,25 @@ void displayLines() {
 	
 }
 
+bool loadMedia()
+{
+    //Load texture
+    if( !gLoadedTexture.loadTextureFromFile( "Geometric-Modelling/unit cube2.jpg" ) )
+    {
+        printf( "Unable to load file texture!\n" );
+        return false;
+    }
+
+    return true;
+}
+
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	
+	GLfloat x = ( winWidth - gLoadedTexture.textureWidth() ) / 2.f;
+    GLfloat y = ( winHeight - gLoadedTexture.textureHeight() ) / 2.f;
+	gLoadedTexture.render( x, y );
+
 	if(points.size() == 7)
 		displayLines();
 	displayPoints();
@@ -194,6 +219,17 @@ int main(int argc, char** argv) {
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("Cube'n stuff");
 	init();
+
+	printf( "1\n" );
+
+	//Load media
+    if( !loadMedia() )
+    {
+        printf( "Unable to load media!\n" );
+        return 2;
+    }
+
+	printf( "2\n" );
 
 	glutDisplayFunc(display);
 	glutMouseFunc(processMouse);

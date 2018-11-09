@@ -25,6 +25,13 @@ sudo apt-get install freeglut3 freeglut3-dev libgl1-mesa-dev libglu1-mesa-dev -y
 
 echo "--------------------------------------------------------------------"
 echo "FREEGLUT DONE"
+echo "DEVIL STARTING"
+echo "--------------------------------------------------------------------"
+
+sudo apt-get install libdevil-dev -y
+
+echo "--------------------------------------------------------------------"
+echo "DEVIL DONE"
 echo "GUI STARTING"
 echo "--------------------------------------------------------------------"
 

@@ -1,1 +1,3 @@
-g++ Geometric-Modelling/main.cpp -Wall -std=c++11 -O3 -march=native -ffp-contract=fast -I/usr/include/armadillo_bits -I/usr/local/include/optim -I"Geometric-Modelling/" -lblas -llapack -loptim -lGL -lglut -lGLU -o ./main.out
+#g++ Geometric-Modelling/main.cpp -Wall -std=c++11 -O3 -march=native -ffp-contract=fast -I/usr/include/armadillo_bits -I/usr/local/include/optim -I"Geometric-Modelling/" -lblas -llapack -loptim -lGL -lglut -lGLU -lIL -lILU -o ./main.out
+#g++ 06_loading_a_texture/LTexture.cpp 06_loading_a_texture/LUtil.cpp 06_loading_a_texture/main.cpp -I"06_loading_a_texture/" -lIL -lGL -lglut -lGLU -o ./test.out
+g++ -w Geometric-Modelling/main.cpp Geometric-Modelling/LTexture.cpp -I"Geometric-Modelling/" -lGL -lglut -lGLU -lIL -lILU -o ./main.out

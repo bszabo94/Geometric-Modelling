@@ -1,20 +1,24 @@
 #include <GL/glut.h>
-#include <bevgrafmath2017.h>
+#include "bevgrafmath2017.h"
 #include <cmath>
 #include <vector>
 #include <iostream>
 #include <string>
+
+#include "functions.cpp"
+#include "optim/optim.hpp"
 
 #include "IL/il.h"
 #include <IL/ilu.h>
 #include "LTexture.h"
 
 const int winWidth = 800, winHeight = 600;
-std::vector<vec2> points;
+std::vector<vec2> points, optpoints;
 
 int dragged = -1;
 int pointRadius = 4;
 int uDist = winWidth/4.0;
+bool optimized = false;
 
 //File loaded texture
 LTexture gLoadedTexture;
@@ -83,19 +87,6 @@ void processMouse(int button, int action, int xMouse, int yMouse) {
 }
 
 
-double optFunc(double t1, double t2, double t3, double tanAlpha, double tanBeta, double tanGamma) {
-	
-	double sum = 0.0;
-
-	sum += std::abs( (pow(1 - t1, 2) / pow(t1, 2)) * (pow(t2, 2) / pow(1 - t2, 2)) - tanAlpha / tanBeta );
-	sum += std::abs( (pow(1 - t1, 2) / pow(t1, 2)) * (pow(t3, 2) / pow(1 - t3, 2)) - tanAlpha / tanGamma);
-	sum += std::abs( (pow(1 - t2, 2) / pow(t2, 2)) * (pow(t3, 2) / pow(1 - t3, 2)) - tanBeta / tanGamma);
-
-
-	return sum;
-
-}
-
 
 bool trueProj(vec2 o, vec2 x, vec2 y, vec2 z, vec2 uX, vec2 uY, vec2 uZ, double sen) {
 
@@ -147,6 +138,29 @@ void displayPoints() {
 
 }
 
+void displayOptPoints(){
+    glColor3f(0.0, 1.0, 0.0);
+	glPointSize(12.0);
+	glBegin(GL_POINTS);
+	for (int i = 0; i < optpoints.size(); i++) {
+		glVertex2f(optpoints[i].x, optpoints[i].y);
+	}
+	glEnd();
+        
+}
+
+void calcOptPoints(double t1, double t2, double t3){
+    vec2 p1 = t1 * points[0] + (1-t1) * points[4];
+    vec2 p2 = t2 * points[0] + (1-t2) * points[5];
+    vec2 p3 = t3 * points[0] + (1-t3) * points[6];
+    
+    optpoints.push_back(p1);
+    optpoints.push_back(p2);
+    optpoints.push_back(p3);
+    
+    optimized = true;
+}
+
 void displayLines() {
 	glColor3d(0.0, 0.0, 0.0);
 	glLineWidth(2.0);
@@ -181,7 +195,7 @@ void displayLines() {
 bool loadMedia()
 {
     //Load texture
-    if( !gLoadedTexture.loadTextureFromFile( "Geometric-Modelling/unit cube2.jpg" ) )
+    if( !gLoadedTexture.loadTextureFromFile( "Geometric-Modelling/cube_small.jpg" ) )
     {
         printf( "Unable to load file texture!\n" );
         return false;
@@ -200,18 +214,74 @@ void display() {
 	if(points.size() == 7)
 		displayLines();
 	displayPoints();
+    if(optimized)
+        displayOptPoints();
 
 	glutSwapBuffers();
 }
 
+
+double thesis_fn(const arma::vec& vals_inp, arma::vec* grad_out, void* opt_data){
+ 
+    // evaluate function
+    double t1 = vals_inp(0);
+    double t2 = vals_inp(1);
+    double t3 = vals_inp(2);
+ 
+    double obj_val = thesisfunc(t1, t2, t3, points[0], points[4], points[5], points[6]);
+ 
+    // update gradient
+    if(grad_out){
+        
+        
+        std::vector<double> grads = thesisfuncgradient(t1, t2, t3, points[0], points[4], points[5], points[6]);
+ 
+        // partial derivate, t1
+        (*grad_out)(0) = grads[0];
+ 
+        // partial derivate, t2
+        (*grad_out)(1) = grads[1];
+        
+        // partial derivate, t3
+        (*grad_out)(2) = grads[2];
+ 
+    }
+ 
+    // return value
+    return obj_val;
+ 
+}
+
+
+void optimizeForT(){
+    
+    std::cout << "Performing optimization..." << std::endl; 
+      
+    arma::vec t = arma::zeros(3,1) + 0.5;
+    std::cout << "Initialized optimziation at \n" << t << std::endl;
+      
+    bool success = optim::bfgs(t, thesis_fn, nullptr);
+
+    if(success){
+        std::cout << "Function optimization completed successfully!" << std::endl;
+    }else{
+        std::cout << "Function optimization completed unsuccessfully!" << std::endl;
+    }
+    
+    std::cout << "Solution :\n" << t << std::endl;
+    
+    calcOptPoints(t(0), t(1), t(2));
+      
+}
+
 void keyPressed(unsigned char key, int x, int y) {
 	if (key == 's') {
-		//TODO
-		//optimization comes here
+		optimizeForT();
 	}
 }
 
 int main(int argc, char** argv) {
+    
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);

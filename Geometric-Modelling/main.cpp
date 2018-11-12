@@ -150,6 +150,8 @@ void displayOptPoints(){
 }
 
 void calcOptPoints(double t1, double t2, double t3){
+	optpoints.clear();
+
     vec2 p1 = t1 * points[0] + (1-t1) * points[4];
     vec2 p2 = t2 * points[0] + (1-t2) * points[5];
     vec2 p3 = t3 * points[0] + (1-t3) * points[6];
@@ -192,6 +194,29 @@ void displayLines() {
 	
 }
 
+void displayOptLines() {
+	glColor3d(0.0, 0.0, 1.0);
+	glLineWidth(3.0);
+	
+	for (int i = 4; i < 7; i++) {
+		glBegin(GL_LINES);
+		glVertex2d(points[0].x, points[0].y);
+		glVertex2d(points[i].x, points[i].y);
+		glEnd();
+	}
+
+	for (int i = 4; i < 7; i++) 
+	{
+		for(int j = 0; j < optpoints.size(); j++)
+		{
+			glBegin(GL_LINES);
+			glVertex2d(points[i].x, points[i].y);
+			glVertex2d(optpoints[j].x, optpoints[j].y);
+			glEnd();
+		}
+	}
+}
+
 bool loadMedia()
 {
     //Load texture
@@ -214,8 +239,10 @@ void display() {
 	if(points.size() == 7)
 		displayLines();
 	displayPoints();
-    if(optimized)
-        displayOptPoints();
+    if(optimized) {
+		displayOptPoints();
+		displayOptLines();
+	}
 
 	glutSwapBuffers();
 }
@@ -259,8 +286,13 @@ void optimizeForT(){
       
     arma::vec t = arma::zeros(3,1) + 0.5;
     std::cout << "Initialized optimziation at \n" << t << std::endl;
+
+	optim::algo_settings_t config;
+	config.vals_bound = true;
+	config.lower_bounds << 0 << 0 << 0;
+	config.upper_bounds << 1 << 1 << 1;
       
-    bool success = optim::bfgs(t, thesis_fn, nullptr);
+    bool success = optim::bfgs(t, thesis_fn, nullptr, config);
 
     if(success){
         std::cout << "Function optimization completed successfully!" << std::endl;

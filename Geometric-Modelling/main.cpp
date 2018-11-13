@@ -51,6 +51,12 @@ double getYofLine(vec2 p1, vec2 p2, double x) {
 
 }
 
+double getXofLine(vec2 p1, vec2 p2, double y) {
+	vec2 norm = vec2(p1.y - p2.y, -(p1.x -p2.x));
+
+	return (norm.x * p1.x + norm.y * p1.y - norm.y * y) / norm.x;
+}	
+
 void update(int val) {
 	glutPostRedisplay();
 	glutTimerFunc(2, update, 0);
@@ -119,10 +125,21 @@ bool trueProj(vec2 o, vec2 x, vec2 y, vec2 z, vec2 uX, vec2 uY, vec2 uZ, double 
 
 void processMouseActiveMotion(int xMouse, int yMouse) {
 	if (dragged >= 0) {
-		points[dragged].x = xMouse;
-		points[dragged].y = getYofLine(points[0], points[dragged-3], xMouse);
+		double steepness = (points[0].x - points[dragged-3].x) / (points[0].y - points[dragged-3].y);
+		
+		if(std::abs(steepness) < 1){
+			//std::cout << "grabbed vertical" << std::endl;
+			points[dragged].y = winHeight - yMouse;
+			points[dragged].x = getXofLine(points[0], points[dragged-3], winHeight - yMouse);
+		} else {
+			//std::cout << "grabbed horizontal" << std::endl;
+			points[dragged].x = xMouse;
+			points[dragged].y = getYofLine(points[0], points[dragged-3], xMouse);
+		}
+		
+		
 
-		std::cout << trueProj(points[0], points[1], points[2], points[3], points[4], points[5], points[6], 0.1) << std::endl;
+		//std::cout << trueProj(points[0], points[1], points[2], points[3], points[4], points[5], points[6], 0.1) << std::endl;
 	}
 }
 

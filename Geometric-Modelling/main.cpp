@@ -306,9 +306,61 @@ void optimizeForT(){
       
 }
 
+void scaleDownOptimizedPoints() {
+	double dist1 = dist(points[1], optpoints[0]);
+	double distOrigOpt1 = dist(points[0], optpoints[0]);
+
+	double dist2 = dist(points[2], optpoints[1]);
+	double distOrigOpt2 = dist(points[0], optpoints[1]);
+
+	double dist3 = dist(points[3], optpoints[2]);
+	double distOrigOpt3 = dist(points[0], optpoints[2]);
+
+	double scaleRatio;
+	bool scaleDown;
+
+	if(dist1 <= dist2 && dist1 <= dist3) {
+		scaleRatio = dist1 / distOrigOpt1;
+
+		if(dist(points[0], points[1]) <= distOrigOpt1) {
+			scaleDown = true;
+		} else {
+			scaleDown = false;
+		}
+	} else if(dist2 <= dist1 && dist2 <= dist3) {
+		scaleRatio = dist2 / distOrigOpt2;
+		
+		if(dist(points[0], points[2]) <= distOrigOpt2) {
+			scaleDown = true;
+		} else {
+			scaleDown = false;
+		}
+	} else if(dist3 <= dist1 && dist3 <= dist2) {
+		scaleRatio = dist3 / distOrigOpt3;
+		
+		if(dist(points[0], points[3]) <= distOrigOpt3) {
+			scaleDown = true;
+		} else {
+			scaleDown = false;
+		}
+	}
+
+	if(scaleDown) {
+		optpoints[0] = points[0] + normalize(optpoints[0] - points[0]) * (distOrigOpt1 - scaleRatio * distOrigOpt1);
+		optpoints[1] = points[0] + normalize(optpoints[1] - points[0]) * (distOrigOpt2 - scaleRatio * distOrigOpt2);
+		optpoints[2] = points[0] + normalize(optpoints[2] - points[0]) * (distOrigOpt3 - scaleRatio * distOrigOpt3);
+	} else {
+		optpoints[0] = points[0] + normalize(optpoints[0] - points[0]) * (distOrigOpt1 + scaleRatio * distOrigOpt1);
+		optpoints[1] = points[0] + normalize(optpoints[1] - points[0]) * (distOrigOpt2 + scaleRatio * distOrigOpt2);
+		optpoints[2] = points[0] + normalize(optpoints[2] - points[0]) * (distOrigOpt3 + scaleRatio * distOrigOpt3);
+	}
+}
+
 void keyPressed(unsigned char key, int x, int y) {
 	if (key == 's') {
 		optimizeForT();
+	} else if (key == 'd') {
+		scaleDownOptimizedPoints();
 	}
 }
 

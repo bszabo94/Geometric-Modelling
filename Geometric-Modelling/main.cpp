@@ -29,6 +29,9 @@ bool optimized = false;
 //File loaded texture
 LTexture gLoadedTexture;
 
+// default image to load
+const std::string defaultImageFileName = "Geometric-Modelling/cube_small.jpg";
+
 void init() {
 	glClearColor(1.0, 1.0, 1.0, 0.0);
 	glMatrixMode(GL_PROJECTION);
@@ -314,10 +317,10 @@ void displayOptLines() {
 	}
 }
 
-bool loadMedia()
+bool loadMedia(std::string fileName)
 {
     //Load texture
-    if( !gLoadedTexture.loadTextureFromFile( "Geometric-Modelling/cube_small.jpg" ) )
+    if( !gLoadedTexture.loadTextureFromFile(fileName) )
     {
         printf( "Unable to load file texture!\n" );
         return false;
@@ -473,12 +476,17 @@ int main(int argc, char** argv) {
 
 	printf( "1\n" );
 
+	std::string fileName = defaultImageFileName;
+	if(argc == 2){
+		fileName = argv[1];
+	}
+
 	//Load media
-    if( !loadMedia() )
-    {
-        printf( "Unable to load media!\n" );
-        return 2;
-    }
+	if( !loadMedia(fileName) )
+	{
+		printf( "Unable to load media!\n" );
+		return 2;
+	}
 
 	printf( "2\n" );
 

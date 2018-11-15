@@ -126,7 +126,8 @@ void createU(){
 	vec2 uY = intersect(o, fromOToY, z, fromZToHelperPointUy);
 
 	// calculate Uz
-	vec2 uZ = intersect(x, fromXToHelperPointUx, o, fromOToZ);
+	// vec2 uZ = intersect(x, fromXToHelperPointUx, o, fromOToZ);
+	vec2 uZ = intersect(x, fromXToHelperPointUx, y, fromYToHelperPointUy);
 
 	// add the calculated points to the points vector
 	points.push_back(uX);

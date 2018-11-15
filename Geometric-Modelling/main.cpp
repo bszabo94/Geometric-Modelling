@@ -15,6 +15,12 @@
 const int winWidth = 800, winHeight = 600;
 std::vector<vec2> points, optpoints;
 
+// helper points for calculating "endless distant" points
+// this vector will countaint 2 elements for calculating the "endless distant" points
+// the first one is for Ux and Uz
+// the second one is for Uy and Uz
+std::vector<vec2> helperPoints;
+
 int dragged = -1;
 int pointRadius = 4;
 int uDist = winWidth/4.0;
@@ -80,10 +86,26 @@ void createU(int uDist) {
 void processMouse(int button, int action, int xMouse, int yMouse) {
 	if (button == GLUT_LEFT_BUTTON && action == GLUT_DOWN) {
 		dragPoint(points, 10, xMouse, yMouse);
-		if (dragged == -1 && points.size() < 4) {
-			points.push_back(vec2(xMouse, winHeight - yMouse));
-			if (points.size() == 4)
-				createU(uDist);
+
+		// if we not dragging any point
+		if(dragged == -1){
+
+			// if we still picking the base points
+			if(points.size() < 4){
+				points.push_back(vec2(xMouse, winHeight - yMouse));
+			}
+			// if we still picking the helper points
+			else if(helperPoints.size() != 2){
+
+				helperPoints.push_back(vec2(xMouse, winHeight - yMouse));
+
+				// if we have the helper points (and also the base points), lets calculate the "endless distant" points
+				if(helperPoints.size() == 2){
+					createU(uDist);
+				}
+
+			}
+
 		}
 			
 	}
@@ -148,9 +170,18 @@ void displayPoints() {
 	glColor3f(1.0, 0.0, 0.0);
 	glPointSize(10.0);
 	glBegin(GL_POINTS);
+
+	// base points
 	for (int i = 0; i < points.size(); i++) {
 		glVertex2f(points[i].x, points[i].y);
 	}
+
+	// helper points
+	glColor3f(1.0, 0.0, 1.0);
+	for(int i=0; i<helperPoints.size(); i++){
+		glVertex2f(helperPoints[i].x, helperPoints[i].y);
+	}
+
 	glEnd();
 
 }

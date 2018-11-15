@@ -68,19 +68,68 @@ void update(int val) {
 	glutTimerFunc(2, update, 0);
 }
 
-void createU(int uDist) {
-	vec2 o = points[0],
-		x = points[1],
-		y = points[2],
-		z = points[3];
-	
-	//uX = o + uDist * normalize(x - o);
-	//uY = o + uDist * normalize(y - o);
-	//uZ = o + uDist * normalize(z - o);
-	points.push_back(o + uDist * normalize(x - o));
-	points.push_back(o + uDist * normalize(y - o));
-	points.push_back(o + uDist * normalize(z - o));
-	
+// calculate the intersection of two 2d vectors
+// source: https://stackoverflow.com/a/2932601/5352042
+vec2 intersect(vec2 aOrigin, vec2 aDirection, vec2 bOrigin, vec2 bDirection){
+
+	float dx = bOrigin.x - aOrigin.x;
+	float dy = bOrigin.y - aOrigin.y;
+
+	float det = bDirection.x * aDirection.y - bDirection.y * aDirection.x;
+
+	float u = fabs((dy * bDirection.x - dx * bDirection.y) / det);
+	float v = fabs((dy * aDirection.x - dx * aDirection.y) / det);
+
+	// calculate intersection point
+	vec2 intersectionPoint = aOrigin + aDirection * u;
+
+	return intersectionPoint;
+
+}
+
+// calculate "endless distant" points
+void createU(){
+
+	// base points
+	vec2 o = points[0];
+	vec2 x = points[1];
+	vec2 y = points[2];
+	vec2 z = points[3];
+
+	// helper points
+	vec2 helperPointUx = helperPoints[0];
+	vec2 helperPointUy = helperPoints[1];
+
+	// calculate direction vectors
+	// o -> x
+	vec2 fromOToX = (x - o);
+	// z -> helperPointUx
+	vec2 fromZToHelperPointUx = (helperPointUx - z);
+	// o -> y
+	vec2 fromOToY = (y - o);
+	// z -> helperPointUy
+	vec2 fromZToHelperPointUy = (helperPointUy - z);
+	// x -> helperPointUx
+	vec2 fromXToHelperPointUx = (helperPointUx - x);
+	// o -> z
+	vec2 fromOToZ = (z - o);
+	// y -> helperPointUy
+	vec2 fromYToHelperPointUy = (helperPointUy - y);
+
+	// calculate Ux
+	vec2 uX = intersect(o, fromOToX, z, fromZToHelperPointUx);
+
+	// calculate Uy
+	vec2 uY = intersect(o, fromOToY, z, fromZToHelperPointUy);
+
+	// calculate Uz
+	vec2 uZ = intersect(x, fromXToHelperPointUx, o, fromOToZ);
+
+	// add the calculated points to the points vector
+	points.push_back(uX);
+	points.push_back(uY);
+	points.push_back(uZ);
+
 }
 
 void processMouse(int button, int action, int xMouse, int yMouse) {
@@ -101,7 +150,7 @@ void processMouse(int button, int action, int xMouse, int yMouse) {
 
 				// if we have the helper points (and also the base points), lets calculate the "endless distant" points
 				if(helperPoints.size() == 2){
-					createU(uDist);
+					createU();
 				}
 
 			}

@@ -28,9 +28,22 @@ bool optimized = false;
 
 //File loaded texture
 LTexture gLoadedTexture;
+bool displayImage = true;
 
 // default image to load
 const std::string defaultImageFileName = "Geometric-Modelling/cube_small.jpg";
+
+// variables and transformation matrices for zooming and moving
+float zoom = 1.0f;
+float zoomRate = 0.01f;
+vec2 translateVector = vec2(0.0f);
+float translateRate = 10.0f;
+vec2 windowCenter = { (float) winWidth / 2.0f, (float) winHeight / 2.0f };
+mat3 translateToOrigo = translate( -1 * windowCenter);
+mat3 translateBack = translate(windowCenter);
+mat3 scaleMatrix = scale(vec2(zoom));
+mat3 translateMatrix = translate(translateVector);
+mat3 M = translateBack * scaleMatrix * translateToOrigo * translateMatrix;
 
 void init() {
 	glClearColor(1.0, 1.0, 1.0, 0.0);
@@ -218,6 +231,38 @@ void processMouseActiveMotion(int xMouse, int yMouse) {
 	}
 }
 
+// calculate the transformed point for the display from an original point
+// transformation steps: translate to origio -> scale -> translate back to center
+vec2 calculateTransformedPoint(vec2 original){
+
+	// convert original point to homogen form
+	vec3 originalHomogen = ihToH(original);
+
+	// do the transformation
+	vec3 transformedHomogen = M * originalHomogen;
+
+	// convert back the result to inhomogen form
+	vec2 transformedInhomogen = hToIh(transformedHomogen);
+
+	// return result
+	return transformedInhomogen;
+
+}
+
+// update the global matrix used for transformation
+void calculateTransformationMatrix(){
+
+	// update scale matrix
+	scaleMatrix = scale(vec2(zoom));
+
+	// update translate matrix
+	translateMatrix = translate(translateVector);
+
+	// recalculate transformation matrix
+	M = translateBack * scaleMatrix * translateToOrigo * translateMatrix;
+
+}
+
 void displayPoints() {
 
 	glColor3f(1.0, 0.0, 0.0);
@@ -226,13 +271,23 @@ void displayPoints() {
 
 	// base points
 	for (int i = 0; i < points.size(); i++) {
-		glVertex2f(points[i].x, points[i].y);
+
+		vec2 originalPoint = points[i];
+		vec2 transformedPoint = calculateTransformedPoint(originalPoint);
+
+		glVertex2f(transformedPoint.x, transformedPoint.y);
+
 	}
 
 	// helper points
 	glColor3f(1.0, 0.0, 1.0);
 	for(int i=0; i<helperPoints.size(); i++){
-		glVertex2f(helperPoints[i].x, helperPoints[i].y);
+
+		vec2 originalPoint = helperPoints[i];
+		vec2 transformedPoint = calculateTransformedPoint(originalPoint);
+
+		glVertex2f(transformedPoint.x, transformedPoint.y);
+
 	}
 
 	glEnd();
@@ -240,11 +295,21 @@ void displayPoints() {
 }
 
 void displayOptPoints(){
+
     glColor3f(0.0, 1.0, 0.0);
 	glPointSize(12.0);
+
+	vec2 originalPoint;
+	vec2 transformedPoint;
+
 	glBegin(GL_POINTS);
 	for (int i = 0; i < optpoints.size(); i++) {
-		glVertex2f(optpoints[i].x, optpoints[i].y);
+
+		vec2 originalPoint = optpoints[i];
+		vec2 transformedPoint = calculateTransformedPoint(originalPoint);
+
+		glVertex2f(transformedPoint.x, transformedPoint.y);
+
 	}
 	glEnd();
         
@@ -267,30 +332,70 @@ void calcOptPoints(double t1, double t2, double t3){
 void displayLines() {
 	glColor3d(0.0, 0.0, 0.0);
 	glLineWidth(2.0);
+
+	vec2 originalPoint;
+	vec2 transformedPoint;
 	
 	for (int i = 4; i < 7; i++) {
 		glBegin(GL_LINES);
-		glVertex2d(points[0].x, points[0].y);
-		glVertex2d(points[i].x, points[i].y);
+
+		originalPoint = points[0];
+		transformedPoint = calculateTransformedPoint(originalPoint);
+		glVertex2d(transformedPoint.x, transformedPoint.y);
+
+		originalPoint = points[i];
+		transformedPoint = calculateTransformedPoint(originalPoint);
+		glVertex2d(transformedPoint.x, transformedPoint.y);
+
 		glEnd();
 	}
 
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(points[5].x, points[5].y);
-	glVertex2d(points[1].x, points[1].y);
-	glVertex2d(points[6].x, points[6].y);
+
+	originalPoint = points[5];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
+	originalPoint = points[1];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
+	originalPoint = points[6];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
 	glEnd();
 
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(points[5].x, points[5].y);
-	glVertex2d(points[3].x, points[3].y);
-	glVertex2d(points[4].x, points[4].y);
+
+	originalPoint = points[5];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
+	originalPoint = points[3];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
+	originalPoint = points[4];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
 	glEnd();
 
 	glBegin(GL_LINE_LOOP);
-	glVertex2d(points[6].x, points[6].y);
-	glVertex2d(points[2].x, points[2].y);
-	glVertex2d(points[4].x, points[4].y);
+
+	originalPoint = points[6];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
+	originalPoint = points[2];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
+	originalPoint = points[4];
+	transformedPoint = calculateTransformedPoint(originalPoint);
+	glVertex2d(transformedPoint.x, transformedPoint.y);
+
 	glEnd();
 	
 }
@@ -298,11 +403,21 @@ void displayLines() {
 void displayOptLines() {
 	glColor3d(0.0, 0.0, 1.0);
 	glLineWidth(3.0);
+
+	vec2 originalPoint;
+	vec2 transformedPoint;
 	
 	for (int i = 4; i < 7; i++) {
 		glBegin(GL_LINES);
-		glVertex2d(points[0].x, points[0].y);
-		glVertex2d(points[i].x, points[i].y);
+
+		originalPoint = points[0];
+		transformedPoint = calculateTransformedPoint(originalPoint);
+		glVertex2d(transformedPoint.x, transformedPoint.y);
+
+		originalPoint = points[i];
+		transformedPoint = calculateTransformedPoint(originalPoint);
+		glVertex2d(transformedPoint.x, transformedPoint.y);
+
 		glEnd();
 	}
 
@@ -311,8 +426,15 @@ void displayOptLines() {
 		for(int j = 0; j < optpoints.size(); j++)
 		{
 			glBegin(GL_LINES);
-			glVertex2d(points[i].x, points[i].y);
-			glVertex2d(optpoints[j].x, optpoints[j].y);
+
+			originalPoint = points[i];
+			transformedPoint = calculateTransformedPoint(originalPoint);
+			glVertex2d(transformedPoint.x, transformedPoint.y);
+
+			originalPoint = optpoints[j];
+			transformedPoint = calculateTransformedPoint(originalPoint);
+			glVertex2d(transformedPoint.x, transformedPoint.y);
+
 			glEnd();
 		}
 	}
@@ -333,9 +455,11 @@ bool loadMedia(std::string fileName)
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	GLfloat x = ( winWidth - gLoadedTexture.textureWidth() ) / 2.f;
-    GLfloat y = ( winHeight - gLoadedTexture.textureHeight() ) / 2.f;
-	gLoadedTexture.render( x, y );
+	if(displayImage){
+		GLfloat x = ( winWidth - gLoadedTexture.textureWidth() ) / 2.f;
+		GLfloat y = ( winHeight - gLoadedTexture.textureHeight() ) / 2.f;
+		gLoadedTexture.render( x, y );
+	}
 
 	if(points.size() == 7)
 		displayLines();
@@ -462,6 +586,37 @@ void keyPressed(unsigned char key, int x, int y) {
 		optimizeForT();
 	} else if (key == 'd') {
 		scaleDownOptimizedPoints();
+	} else if (key == 'q') {
+		zoom -= zoomRate;
+		calculateTransformationMatrix();
+	} else if (key == 'w') {
+		zoom += zoomRate;
+		calculateTransformationMatrix();
+	} else if (key == 'r') {
+
+		// reset zoom
+		zoom = 1.0f;
+
+		// reset translate
+		translateVector = vec2(0.0f);
+
+		calculateTransformationMatrix();
+
+	} else if (key == 'x') {
+		// turn on/off image rendering
+		displayImage = !displayImage;
+	} else if(key == 'i') {
+		translateVector.y -= translateRate;
+		calculateTransformationMatrix();
+	} else if(key == 'j') {
+		translateVector.x += translateRate;
+		calculateTransformationMatrix();
+	} else if(key == 'k') {
+		translateVector.y += translateRate;
+		calculateTransformationMatrix();
+	} else if(key == 'l') {
+		translateVector.x -= translateRate;
+		calculateTransformationMatrix();
 	}
 }
 

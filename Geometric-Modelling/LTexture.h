@@ -10,6 +10,7 @@ and may not be redistributed without written permission.*/
 #include <GL/glu.h>
 #include <stdio.h>
 #include <string>
+#include "bevgrafmath2017.h"
 
 class LTexture
 {
@@ -68,7 +69,7 @@ class LTexture
          -None
         */
 
-        void render( GLfloat x, GLfloat y );
+        void render( vec2 upperLeftCorner, vec2 upperRightCorner, vec2 lowerLeftCorner, vec2 lowerRightCorner );
         /*
         Pre Condition:
          -A valid OpenGL context

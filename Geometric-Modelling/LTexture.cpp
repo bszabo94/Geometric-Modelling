@@ -107,7 +107,7 @@ void LTexture::freeTexture()
     mTextureHeight = 0;
 }
 
-void LTexture::render( GLfloat x, GLfloat y )
+void LTexture::render( vec2 upperLeftCorner, vec2 upperRightCorner, vec2 lowerLeftCorner, vec2 lowerRightCorner )
 {
     //If the texture exists
     if( mTextureID != 0 )
@@ -124,10 +124,10 @@ void LTexture::render( GLfloat x, GLfloat y )
 
         //Render textured quad
         glBegin( GL_QUADS );
-            glTexCoord2f( 0.f, 1.f ); glVertex2f(x, y);
-            glTexCoord2f( 1.f, 1.f ); glVertex2f(x + mTextureWidth, y);
-            glTexCoord2f( 1.f, 0.f ); glVertex2f(x + mTextureWidth, y + mTextureHeight);
-            glTexCoord2f( 0.f, 0.f ); glVertex2f(x, y + mTextureHeight);
+            glTexCoord2f( 0.f, 1.f ); glVertex2f(upperLeftCorner.x, upperLeftCorner.y);
+            glTexCoord2f( 1.f, 1.f ); glVertex2f(upperRightCorner.x, upperRightCorner.y);
+            glTexCoord2f( 1.f, 0.f ); glVertex2f(lowerRightCorner.x, lowerRightCorner.y);
+            glTexCoord2f( 0.f, 0.f ); glVertex2f(lowerLeftCorner.x, lowerLeftCorner.y);
         glEnd();
     }
 }

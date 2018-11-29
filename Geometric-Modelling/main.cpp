@@ -458,7 +458,13 @@ void display() {
 	if(displayImage){
 		GLfloat x = ( winWidth - gLoadedTexture.textureWidth() ) / 2.f;
 		GLfloat y = ( winHeight - gLoadedTexture.textureHeight() ) / 2.f;
-		gLoadedTexture.render( x, y );
+
+		vec2 upperLeftCorner(x, y);
+		vec2 upperRightCorner(x + gLoadedTexture.textureWidth(), y);
+		vec2 lowerLeftCorner(x, y + gLoadedTexture.textureHeight());
+		vec2 lowerRightCorner(x + gLoadedTexture.textureWidth(), y + gLoadedTexture.textureHeight());
+
+		gLoadedTexture.render( calculateTransformedPoint(upperLeftCorner), calculateTransformedPoint(upperRightCorner), calculateTransformedPoint(lowerLeftCorner), calculateTransformedPoint(lowerRightCorner) );
 	}
 
 	if(points.size() == 7)

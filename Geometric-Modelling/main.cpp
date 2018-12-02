@@ -22,6 +22,7 @@ std::vector<vec2> points, optpoints;
 std::vector<vec2> helperPoints;
 
 int dragged = -1;
+int fixed = -1;
 int pointRadius = 4;
 int uDist = winWidth/4.0;
 bool optimized = false;
@@ -63,6 +64,14 @@ void dragPoint(std::vector<vec2> points, int sensitivity, int mouseX, int mouseY
 	for (int i = 4; i < points.size(); i++) {
 		if (dist(points[i], vec2(mouseX, winHeight - mouseY)) < sensitivity)
 			dragged = i;
+	}
+}
+
+void fixPoint(std::vector<vec2> points, int sensitivity, int mouseX, int mouseY) {
+    int max = points.size() > 4 ? 4 : points.size();
+	for (int i = 1; i < max; i++) {
+		if (dist(points[i], vec2(mouseX, winHeight - mouseY)) < sensitivity)
+			fixed = i;
 	}
 }
 
@@ -178,6 +187,15 @@ void processMouse(int button, int action, int xMouse, int yMouse) {
 		
 	if (button == GLUT_LEFT_BUTTON && action == GLUT_UP)
 		dragged = -1;
+    
+    if(button == GLUT_RIGHT_BUTTON && action == GLUT_DOWN){
+        if(fixed == -1){
+            fixPoint(points, 10, xMouse, yMouse);
+        }
+        else
+            fixed = -1;
+            
+    }
 }
 
 
@@ -265,19 +283,31 @@ void calculateTransformationMatrix(){
 
 void displayPoints() {
 
-	glColor3f(1.0, 0.0, 0.0);
-	glPointSize(10.0);
-	glBegin(GL_POINTS);
+	
 
 	// base points
 	for (int i = 0; i < points.size(); i++) {
+        
+        if(fixed == i)
+            glColor3f(0.5, 0.5, 0.5);
+        else
+            glColor3f(1.0, 0.0, 0.0);
+        
+        glPointSize(10.0);
+        glBegin(GL_POINTS);
 
 		vec2 originalPoint = points[i];
 		vec2 transformedPoint = calculateTransformedPoint(originalPoint);
 
 		glVertex2f(transformedPoint.x, transformedPoint.y);
-
+        
+        glEnd();
 	}
+	
+	
+	glColor3f(1.0, 0.0, 0.0);
+	glPointSize(10.0);
+	glBegin(GL_POINTS);
 
 	// helper points
 	glColor3f(1.0, 0.0, 1.0);
@@ -482,26 +512,71 @@ void display() {
 double thesis_fn(const arma::vec& vals_inp, arma::vec* grad_out, void* opt_data){
  
     // evaluate function
-    double t1 = vals_inp(0);
-    double t2 = vals_inp(1);
-    double t3 = vals_inp(2);
+    double t1, t2, t3;
+    
+        
+    if(fixed == 1){
+        t1 = (points[1].x - points[4].x) / (points[0].x - points[4].x);
+        t2 = vals_inp(0);
+        t3 = vals_inp(1);
+        
+    } else if (fixed == 2){
+        t1 = vals_inp(0);
+        t2 = (points[2].x - points[5].x) / (points[0].x - points[5].x);
+        t3 = vals_inp(1);
+        
+    } else if (fixed == 3){
+        t1 = vals_inp(0);
+        t2 = vals_inp(1);
+        t3 = (points[3].x - points[6].x) / (points[0].x - points[6].x);
+        
+    } else {
+        t1 = vals_inp(0);
+        t2 = vals_inp(1);
+        t3 = vals_inp(2);
+    }
+    
+    
  
     double obj_val = thesisfunc(t1, t2, t3, points[0], points[4], points[5], points[6]);
  
     // update gradient
     if(grad_out){
         
-        
         std::vector<double> grads = thesisfuncgradient(t1, t2, t3, points[0], points[4], points[5], points[6]);
- 
-        // partial derivate, t1
-        (*grad_out)(0) = grads[0];
- 
-        // partial derivate, t2
-        (*grad_out)(1) = grads[1];
         
-        // partial derivate, t3
-        (*grad_out)(2) = grads[2];
+        if(fixed == 1){
+            // partial derivate, t2
+            (*grad_out)(0) = grads[1];
+            
+            // partial derivate, t3
+            (*grad_out)(1) = grads[2];
+        
+        } else if (fixed == 2){
+            // partial derivate, t1
+            (*grad_out)(0) = grads[0];
+            
+            // partial derivate, t3
+            (*grad_out)(1) = grads[2];
+        
+        } else if (fixed == 3){
+            // partial derivate, t1
+            (*grad_out)(0) = grads[0];
+    
+            // partial derivate, t2
+            (*grad_out)(1) = grads[1];
+            
+        
+        } else {
+            // partial derivate, t1
+            (*grad_out)(0) = grads[0];
+    
+            // partial derivate, t2
+            (*grad_out)(1) = grads[1];
+            
+            // partial derivate, t3
+            (*grad_out)(2) = grads[2];
+        }
  
     }
  
@@ -514,8 +589,13 @@ double thesis_fn(const arma::vec& vals_inp, arma::vec* grad_out, void* opt_data)
 void optimizeForT(){
     
     std::cout << "Performing optimization..." << std::endl; 
-      
-    arma::vec t = arma::zeros(3,1) + 0.5;
+    
+    arma::vec t;
+    if(fixed == -1)
+        t = arma::zeros(3,1) + 0.5;
+    else
+        t = arma::zeros(2,1) + 0.5;
+    
     std::cout << "Initialized optimziation at \n" << t << std::endl;
 
 	optim::algo_settings_t config;
@@ -525,15 +605,44 @@ void optimizeForT(){
       
     bool success = optim::bfgs(t, thesis_fn, nullptr, config);
 
+    
+    double t1, t2, t3;
+    
     if(success){
+        
+        if(fixed == 1){
+        t1 = (points[1].x - points[4].x) / (points[0].x - points[4].x);
+        t2 = t(0);
+        t3 = t(1);
+        
+        } else if (fixed == 2){
+        t1 = t(0);
+        t2 = (points[2].x - points[5].x) / (points[0].x - points[5].x);
+        t3 = t(1);
+        
+        } else if (fixed == 3){
+        t1 = t(0);
+        t2 = t(1);
+        t3 = (points[3].x - points[6].x) / (points[0].x - points[6].x);
+        
+        } else {
+        t1 = t(0);
+        t2 = t(1);
+        t3 = t(2);
+        }
+        
+        
+        std::cout.precision(15);
+        double val = thesisfunc(t1, t2, t3, points[0], points[4], points[5], points[6]);
         std::cout << "Function optimization completed successfully!" << std::endl;
+        std::cout << "Value of Szabo-theoriem: " << std::fixed << val << std::endl;
     }else{
         std::cout << "Function optimization completed unsuccessfully!" << std::endl;
     }
     
     std::cout << "Solution :\n" << t << std::endl;
     
-    calcOptPoints(t(0), t(1), t(2));
+    calcOptPoints(t1, t2, t3);
       
 }
 

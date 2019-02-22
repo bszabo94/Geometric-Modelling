@@ -12,6 +12,9 @@
 #include <IL/ilu.h>
 #include "LTexture.h"
 
+#include "opencv2/opencv.hpp"
+#include <opencv2/highgui.hpp>
+std::vector<cv::Point2f> destinationPointsTmp;
 const int winWidth = 800, winHeight = 600;
 std::vector<vec2> points, optpoints;
 
@@ -29,6 +32,7 @@ bool optimized = false;
 
 //File loaded texture
 LTexture gLoadedTexture;
+cv::Mat imageMat;
 bool displayImage = true;
 
 // default image to load
@@ -234,18 +238,12 @@ void processMouseActiveMotion(int xMouse, int yMouse) {
 		double steepness = (points[0].x - points[dragged-3].x) / (points[0].y - points[dragged-3].y);
 		
 		if(std::abs(steepness) < 1){
-			//std::cout << "grabbed vertical" << std::endl;
 			points[dragged].y = winHeight - yMouse;
 			points[dragged].x = getXofLine(points[0], points[dragged-3], winHeight - yMouse);
 		} else {
-			//std::cout << "grabbed horizontal" << std::endl;
 			points[dragged].x = xMouse;
 			points[dragged].y = getYofLine(points[0], points[dragged-3], xMouse);
 		}
-		
-		
-
-		//std::cout << trueProj(points[0], points[1], points[2], points[3], points[4], points[5], points[6], 0.1) << std::endl;
 	}
 }
 
@@ -320,6 +318,24 @@ void displayPoints() {
 
 	}
 
+	glEnd();
+
+
+	glColor3f(1.0, 1.0, 1.0);
+	glPointSize(12.0);
+
+	vec2 originalPoint;
+	vec2 transformedPoint;
+
+	glBegin(GL_POINTS);
+	for (int i = 0; i < destinationPointsTmp.size(); i++) {
+
+		vec2 originalPoint = vec2(destinationPointsTmp[i].x, destinationPointsTmp[i].y);
+		vec2 transformedPoint = calculateTransformedPoint(originalPoint);
+
+		glVertex2f(transformedPoint.x, transformedPoint.y);
+
+	}
 	glEnd();
 
 }
@@ -470,14 +486,15 @@ void displayOptLines() {
 	}
 }
 
-bool loadMedia(std::string fileName)
-{
+bool loadMedia(std::string fileName) {
     //Load texture
     if( !gLoadedTexture.loadTextureFromFile(fileName) )
     {
         printf( "Unable to load file texture!\n" );
         return false;
     }
+
+	imageMat = cv::imread(fileName);
 
     return true;
 }
@@ -486,15 +503,25 @@ void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	if(displayImage){
-		GLfloat x = ( winWidth - gLoadedTexture.textureWidth() ) / 2.f;
+		/*GLfloat x = ( winWidth - gLoadedTexture.textureWidth() ) / 2.f;
 		GLfloat y = ( winHeight - gLoadedTexture.textureHeight() ) / 2.f;
 
 		vec2 upperLeftCorner(x, y);
 		vec2 upperRightCorner(x + gLoadedTexture.textureWidth(), y);
 		vec2 lowerLeftCorner(x, y + gLoadedTexture.textureHeight());
-		vec2 lowerRightCorner(x + gLoadedTexture.textureWidth(), y + gLoadedTexture.textureHeight());
+		vec2 lowerRightCorner(x + gLoadedTexture.textureWidth(), y + gLoadedTexture.textureHeight());*/
 
-		gLoadedTexture.render( calculateTransformedPoint(upperLeftCorner), calculateTransformedPoint(upperRightCorner), calculateTransformedPoint(lowerLeftCorner), calculateTransformedPoint(lowerRightCorner) );
+		vec2 upperLeftCorner(0, 0);
+		vec2 upperRightCorner(0 + gLoadedTexture.textureWidth(), 0);
+		vec2 lowerLeftCorner(0, 0 + gLoadedTexture.textureHeight());
+		vec2 lowerRightCorner(0 + gLoadedTexture.textureWidth(), 0 + gLoadedTexture.textureHeight());
+
+		gLoadedTexture.render( 
+			calculateTransformedPoint(upperLeftCorner), 
+			calculateTransformedPoint(upperRightCorner), 
+			calculateTransformedPoint(lowerLeftCorner), 
+			calculateTransformedPoint(lowerRightCorner) 
+		);
 	}
 
 	if(points.size() == 7)
@@ -696,11 +723,114 @@ void scaleDownOptimizedPoints() {
 	}
 }
 
+//TODO im sure these are transformed points or stuff like that, so it sill sucks, or if not transformed, it needs to be scaled on to the image.
+void transformImage() {
+
+	std::vector<vec2> originalIntersections;
+
+	vec2 fromXToUz = points[6] - points[1];
+	vec2 fromZToUx = points[4] - points[3];
+	originalIntersections.push_back(intersect(points[1], fromXToUz, points[3], fromZToUx));
+
+	vec2 fromYToUz = points[6] - points[2];
+	vec2 fromZToUy = points[5] - points[3];
+	originalIntersections.push_back(intersect(points[2], fromYToUz, points[3], fromZToUy));
+
+	vec2 fromXToUy = points[5] - points[1];
+	vec2 fromYToUx = points[4] - points[2];
+	originalIntersections.push_back(intersect(points[1], fromXToUy, points[2], fromYToUx));
+
+	std::vector<cv::Point2f> sourcePoints;
+	sourcePoints.push_back(cv::Point2f(points[0].x, imageMat.rows - points[0].y));
+    sourcePoints.push_back(cv::Point2f(points[1].x, imageMat.rows - points[1].y));
+    sourcePoints.push_back(cv::Point2f(originalIntersections[0].x, imageMat.rows - originalIntersections[0].y));
+    sourcePoints.push_back(cv::Point2f(points[3].x, imageMat.rows - points[3].y));
+	sourcePoints.push_back(cv::Point2f(originalIntersections[1].x, imageMat.rows - originalIntersections[1].y));
+	sourcePoints.push_back(cv::Point2f(points[2].x, imageMat.rows - points[2].y));
+	sourcePoints.push_back(cv::Point2f(originalIntersections[2].x, imageMat.rows - originalIntersections[2].y));
+	
+	/*std::cout << sourcePoints[0].x << " " << sourcePoints[0].y << std::endl;
+	std::cout << sourcePoints[1].x << " " << sourcePoints[1].y << std::endl;
+	std::cout << sourcePoints[2].x << " " << sourcePoints[2].y << std::endl;
+	std::cout << sourcePoints[3].x << " " << sourcePoints[3].y << std::endl;
+	std::cout << sourcePoints[4].x << " " << sourcePoints[4].y << std::endl;
+	std::cout << sourcePoints[5].x << " " << sourcePoints[5].y << std::endl;*/
+
+	std::vector<vec2> optimizedIntersections;
+
+	vec2 fromOptimozedXToUz = points[6] - optpoints[0];
+	vec2 fromOptimizedZToUx = points[4] - optpoints[2];
+	optimizedIntersections.push_back(intersect(optpoints[0], fromOptimozedXToUz, optpoints[2], fromOptimizedZToUx));
+
+	vec2 fromOptimizedYToUz = points[6] - optpoints[1];
+	vec2 fromOptimizedZToUy = points[5] - optpoints[2];
+	optimizedIntersections.push_back(intersect(optpoints[1], fromOptimizedYToUz, optpoints[2], fromOptimizedZToUy));
+
+	vec2 fromOptimizedXToUy = points[5] - optpoints[0];
+	vec2 fromOptimizedYToUx = points[4] - optpoints[1];
+	optimizedIntersections.push_back(intersect(optpoints[0], fromOptimizedXToUy, optpoints[1], fromOptimizedYToUx));
+
+	std::vector<cv::Point2f> destinationPoints;
+	destinationPoints.push_back(cv::Point2f(points[0].x, imageMat.rows - points[0].y));
+    destinationPoints.push_back(cv::Point2f(optpoints[0].x, imageMat.rows - optpoints[0].y));
+    destinationPoints.push_back(cv::Point2f(optimizedIntersections[0].x, imageMat.rows - optimizedIntersections[0].y));
+    destinationPoints.push_back(cv::Point2f(optpoints[2].x, imageMat.rows - optpoints[2].y));
+    destinationPoints.push_back(cv::Point2f(optimizedIntersections[1].x, imageMat.rows - optimizedIntersections[1].y));
+    destinationPoints.push_back(cv::Point2f(optpoints[1].x, imageMat.rows - optpoints[1].y));
+    destinationPoints.push_back(cv::Point2f(optimizedIntersections[2].x, imageMat.rows - optimizedIntersections[2].y));
+
+
+	destinationPointsTmp.push_back(cv::Point2f(points[0].x, points[0].y));
+    destinationPointsTmp.push_back(cv::Point2f(optpoints[0].x, optpoints[0].y));
+    destinationPointsTmp.push_back(cv::Point2f(optimizedIntersections[0].x, optimizedIntersections[0].y));
+    destinationPointsTmp.push_back(cv::Point2f(optpoints[2].x, optpoints[2].y));
+    destinationPointsTmp.push_back(cv::Point2f(optimizedIntersections[1].x, optimizedIntersections[1].y));
+    destinationPointsTmp.push_back(cv::Point2f(optpoints[1].x, optpoints[1].y));
+    destinationPointsTmp.push_back(cv::Point2f(optimizedIntersections[2].x, optimizedIntersections[2].y));
+
+
+
+	cv::Mat homography = findHomography(sourcePoints, destinationPoints, 0, 1);
+
+	cv::Mat transformedImageMat;
+
+	warpPerspective(imageMat, transformedImageMat, homography, imageMat.size());
+
+	/*GLuint* imageArray = (GLuint*)calloc(transformedImageMat.rows * transformedImageMat.cols, sizeof(GLuint));
+	std::cout << "asd" << std::endl;
+	for(int i = 0; i < transformedImageMat.rows; ++i) {
+		for(int j = 0; j < transformedImageMat.cols; ++j) {
+			imageArray[i * transformedImageMat.cols + j] = (GLuint)transformedImageMat.ptr<int>(i)[j];
+			std::cout << i << " " << j << std::endl;
+		}
+	}
+	std::cout << "asd" << std::endl;*/
+
+	imwrite("newCube.jpg", transformedImageMat);
+
+	gLoadedTexture.freeTexture();
+
+	if( !gLoadedTexture.loadTextureFromFile("newCube.jpg") )
+    {
+        printf( "Unable to load the transformed file texture!\n" );
+        return;
+    }
+
+	//gLoadedTexture.loadTextureFromPixels32(imageArray, transformedImageMat.cols, transformedImageMat.rows);
+
+	//imshow("Source Image", imageMat);
+    //imshow("Warped Source Image", transformedImageMat);
+ 
+    //cv::waitKey(0);
+}
+
 void keyPressed(unsigned char key, int x, int y) {
 	if (key == 's') {
 		optimizeForT();
 	} else if (key == 'd') {
 		scaleDownOptimizedPoints();
+	} else if (key == 'f') {
+		transformImage();
 	} else if (key == 'q') {
 		zoom -= zoomRate;
 		calculateTransformationMatrix();
@@ -745,8 +875,6 @@ int main(int argc, char** argv) {
 	glutCreateWindow("Cube'n stuff");
 	init();
 
-	printf( "1\n" );
-
 	std::string fileName = defaultImageFileName;
 	if(argc == 2){
 		fileName = argv[1];
@@ -758,8 +886,6 @@ int main(int argc, char** argv) {
 		printf( "Unable to load media!\n" );
 		return 2;
 	}
-
-	printf( "2\n" );
 
 	glutDisplayFunc(display);
 	glutMouseFunc(processMouse);

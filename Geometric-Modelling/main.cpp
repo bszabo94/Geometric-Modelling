@@ -723,8 +723,17 @@ void scaleDownOptimizedPoints() {
 	}
 }
 
+mat3 matToMat3(cv::Mat m) {
+	mat3 m2(m.at<float>(cv::Point(0, 0)), m.at<float>(cv::Point(1, 0)), m.at<float>(cv::Point(2, 0)),
+			m.at<float>(cv::Point(0, 1)), m.at<float>(cv::Point(1, 1)), m.at<float>(cv::Point(2, 1)),
+			m.at<float>(cv::Point(0, 2)), m.at<float>(cv::Point(1, 2)), m.at<float>(cv::Point(2, 2)));
+
+	return m2;
+}
+
 //TODO im sure these are transformed points or stuff like that, so it sill sucks, or if not transformed, it needs to be scaled on to the image.
 void transformImage() {
+	cv::Mat imageMatCopy = imageMat.clone();
 
 	std::vector<vec2> originalIntersections;
 
@@ -741,13 +750,13 @@ void transformImage() {
 	originalIntersections.push_back(intersect(points[1], fromXToUy, points[2], fromYToUx));
 
 	std::vector<cv::Point2f> sourcePoints;
-	sourcePoints.push_back(cv::Point2f(points[0].x, imageMat.rows - points[0].y));
-    sourcePoints.push_back(cv::Point2f(points[1].x, imageMat.rows - points[1].y));
-    sourcePoints.push_back(cv::Point2f(originalIntersections[0].x, imageMat.rows - originalIntersections[0].y));
-    sourcePoints.push_back(cv::Point2f(points[3].x, imageMat.rows - points[3].y));
-	sourcePoints.push_back(cv::Point2f(originalIntersections[1].x, imageMat.rows - originalIntersections[1].y));
-	sourcePoints.push_back(cv::Point2f(points[2].x, imageMat.rows - points[2].y));
-	sourcePoints.push_back(cv::Point2f(originalIntersections[2].x, imageMat.rows - originalIntersections[2].y));
+	sourcePoints.push_back(cv::Point2f(points[0].x, imageMatCopy.rows - points[0].y));
+    sourcePoints.push_back(cv::Point2f(points[1].x, imageMatCopy.rows - points[1].y));
+    sourcePoints.push_back(cv::Point2f(originalIntersections[0].x, imageMatCopy.rows - originalIntersections[0].y));
+    sourcePoints.push_back(cv::Point2f(points[3].x, imageMatCopy.rows - points[3].y));
+	sourcePoints.push_back(cv::Point2f(originalIntersections[1].x, imageMatCopy.rows - originalIntersections[1].y));
+	sourcePoints.push_back(cv::Point2f(points[2].x, imageMatCopy.rows - points[2].y));
+	sourcePoints.push_back(cv::Point2f(originalIntersections[2].x, imageMatCopy.rows - originalIntersections[2].y));
 	
 	/*std::cout << sourcePoints[0].x << " " << sourcePoints[0].y << std::endl;
 	std::cout << sourcePoints[1].x << " " << sourcePoints[1].y << std::endl;
@@ -771,13 +780,13 @@ void transformImage() {
 	optimizedIntersections.push_back(intersect(optpoints[0], fromOptimizedXToUy, optpoints[1], fromOptimizedYToUx));
 
 	std::vector<cv::Point2f> destinationPoints;
-	destinationPoints.push_back(cv::Point2f(points[0].x, imageMat.rows - points[0].y));
-    destinationPoints.push_back(cv::Point2f(optpoints[0].x, imageMat.rows - optpoints[0].y));
-    destinationPoints.push_back(cv::Point2f(optimizedIntersections[0].x, imageMat.rows - optimizedIntersections[0].y));
-    destinationPoints.push_back(cv::Point2f(optpoints[2].x, imageMat.rows - optpoints[2].y));
-    destinationPoints.push_back(cv::Point2f(optimizedIntersections[1].x, imageMat.rows - optimizedIntersections[1].y));
-    destinationPoints.push_back(cv::Point2f(optpoints[1].x, imageMat.rows - optpoints[1].y));
-    destinationPoints.push_back(cv::Point2f(optimizedIntersections[2].x, imageMat.rows - optimizedIntersections[2].y));
+	destinationPoints.push_back(cv::Point2f(points[0].x, imageMatCopy.rows - points[0].y));
+    destinationPoints.push_back(cv::Point2f(optpoints[0].x, imageMatCopy.rows - optpoints[0].y));
+    destinationPoints.push_back(cv::Point2f(optimizedIntersections[0].x, imageMatCopy.rows - optimizedIntersections[0].y));
+    destinationPoints.push_back(cv::Point2f(optpoints[2].x, imageMatCopy.rows - optpoints[2].y));
+    destinationPoints.push_back(cv::Point2f(optimizedIntersections[1].x, imageMatCopy.rows - optimizedIntersections[1].y));
+    destinationPoints.push_back(cv::Point2f(optpoints[1].x, imageMatCopy.rows - optpoints[1].y));
+    destinationPoints.push_back(cv::Point2f(optimizedIntersections[2].x, imageMatCopy.rows - optimizedIntersections[2].y));
 
 
 	destinationPointsTmp.push_back(cv::Point2f(points[0].x, points[0].y));
@@ -788,23 +797,31 @@ void transformImage() {
     destinationPointsTmp.push_back(cv::Point2f(optpoints[1].x, optpoints[1].y));
     destinationPointsTmp.push_back(cv::Point2f(optimizedIntersections[2].x, optimizedIntersections[2].y));
 
-
-
-	cv::Mat homography = findHomography(sourcePoints, destinationPoints, 0, 1);
-
 	cv::Mat transformedImageMat;
+	for(int i = 0; i < 1; i++) {
+		
+		cv::Mat homography = findHomography(sourcePoints, destinationPoints, 0, 1);
 
-	warpPerspective(imageMat, transformedImageMat, homography, imageMat.size());
-
-	/*GLuint* imageArray = (GLuint*)calloc(transformedImageMat.rows * transformedImageMat.cols, sizeof(GLuint));
-	std::cout << "asd" << std::endl;
-	for(int i = 0; i < transformedImageMat.rows; ++i) {
-		for(int j = 0; j < transformedImageMat.cols; ++j) {
-			imageArray[i * transformedImageMat.cols + j] = (GLuint)transformedImageMat.ptr<int>(i)[j];
-			std::cout << i << " " << j << std::endl;
+		for(int k = 0; k < homography.rows; k++){
+			for(int l = 0; l < homography.cols; l++){
+				std::cout << homography.ptr<float>(k)[l] << " ";
+			}
+			std::cout << std::endl;
 		}
+		std::cout << std::endl;
+
+		warpPerspective(imageMatCopy, transformedImageMat, homography, imageMatCopy.size());
+
+		cv::perspectiveTransform(sourcePoints, sourcePoints, homography);
+
+		for(int j = 0; j < sourcePoints.size(); j++) {
+			std::cout << sourcePoints[j].x << " " << sourcePoints[j].y << std::endl;
+			std::cout << destinationPoints[j].x << " " << destinationPoints[j].y << std::endl;
+		}
+		
+		imageMatCopy = transformedImageMat.clone();
+		std::cout << std::endl;
 	}
-	std::cout << "asd" << std::endl;*/
 
 	imwrite("newCube.jpg", transformedImageMat);
 
